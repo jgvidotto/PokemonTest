@@ -58,10 +58,12 @@ function onTouchMove(event) {
         // Update lastPinchDistance for the next move event
         lastPinchDistance = pinchDistance;
     } else if (event.touches.length == 1 && isMoving) {
+        console.log("AQUI");
         var touchPosition3D = getTouchPositionIn3D(event.touches[0]);
 
         // Update model position
         if (touchPosition3D) {
+            console.log("touchPosition3D");
             modelEntity.setAttribute('position', touchPosition3D);
         }
     }
