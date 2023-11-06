@@ -1,30 +1,61 @@
 var modelEntity;
+var cameraEl;
+var sceneEl;
+var intersectionPlane;
+var isMoving = false;
+var lastPinchDistance = null;
+
+function setupCameraAndScene() {
+    cameraEl = document.querySelector('a-camera');
+    sceneEl = document.querySelector('a-scene');
+
+    if (!cameraEl || !sceneEl) {
+        console.error('Camera or Scene not found!');
+        return;
+    }
+
+    setupIntersectionPlane();
+}
+
+function setupIntersectionPlane() {
+    if (sceneEl) {
+        var planeGeometry = new THREE.PlaneGeometry(1000, 1000);
+        var planeMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffff00,
+            side: THREE.DoubleSide,
+            visible: false
+        });
+        intersectionPlane = new THREE.Mesh(planeGeometry, planeMaterial);
+        sceneEl.object3D.add(intersectionPlane);
+    }
+}
 
 window.onload = () => {
-    // Register event listeners
- 
+    setupCameraAndScene();
 
     staticLoadPlaces().then(places => {
         renderPlaces(places);
     }).catch(error => {
         console.error(error);
     });
-    
-    cameraEl = document.querySelector('a-camera');
-    sceneEl = document.querySelector('a-scene');
-    
+
+    // Register event listeners
     window.addEventListener('touchstart', onTouchStart, { passive: false });
     window.addEventListener('touchmove', onTouchMove, { passive: false });
     window.addEventListener('touchend', onTouchEnd, { passive: false });
 };
 
-var isMoving = false;
-var lastPinchDistance = null;
-
 function onTouchStart(event) {
     // Prevent default behavior
     event.preventDefault();
     isMoving = true;
+    if (event.touches.length === 1) {
+        this.isPotentialTap = true;
+        this.startTapPosition = {
+            x: event.touches[0].clientX,
+            y: event.touches[0].clientY
+        };
+    }
 }
 
 
@@ -59,44 +90,87 @@ function onTouchMove(event) {
 
         // Update lastPinchDistance for the next move event
         lastPinchDistance = pinchDistance;
-    } else if (event.touches.length == 1 && isMoving) {
-        console.log("AQUI");
-        var touchPosition3D = getTouchPositionIn3D(event.touches[0]);
-
-        // Update model position
-        if (touchPosition3D) {
-            console.log("touchPosition3D");
-            modelEntity.setAttribute('position', touchPosition3D);
+    } else if (event.touches.length == 1) {
+        if (this.isPotentialTap) {
+            // Check if the finger has moved significantly
+            if (hasMovedSignificantly(event.touches[0])) {
+                this.isPotentialTap = false; // No longer a tap, start dragging
+                moveModelToTouchPosition(event.touches[0]);
+            }
+        } else {
+            moveModelToTouchPosition(event.touches[0]);
         }
     }
 }
 
 function onTouchEnd(event) {
-    if (event.touches.length < 2) {
+    if (this.isPotentialTap && event.touches.length === 0) {
+        // If the finger is lifted and it was a potential tap, place the model
+        placeModelAtTap(this.startTapPosition);
+        this.isPotentialTap = false;
+    } else if (event.touches.length < 2) {
         lastPinchDistance = null;
     }
     isMoving = false;
 }
 
+function hasMovedSignificantly(touch) {
+    // Define what you consider as a significant move
+    const threshold = 10; // pixels
+    var dx = touch.clientX - this.startTapPosition.x;
+    var dy = touch.clientY - this.startTapPosition.y;
+    return Math.abs(dx) > threshold || Math.abs(dy) > threshold;
+}
+
+function moveModelToTouchPosition(touch) {
+    var touchPosition3D = getTouchPositionIn3D(touch);
+    if (touchPosition3D) {
+        modelEntity.setAttribute('position', touchPosition3D);
+    }
+}
+
+function placeModelAtTap(touchPosition) {
+    var touchPosition3D = getTouchPositionIn3D(touchPosition);
+    if (touchPosition3D) {
+        modelEntity.setAttribute('position', touchPosition3D);
+    }
+}
+
 function getTouchPositionIn3D(touchEvent) {
-    // Calculate the normalized position of the touch event on the screen
-    var touchX = (touchEvent.clientX / window.innerWidth) * 2 - 1;
-    var touchY = -(touchEvent.clientY / window.innerHeight) * 2 + 1;
+    var touchX = touchEvent.clientX;
+    var touchY = touchEvent.clientY;
   
-    // Create a raycaster and set its origin and direction
+    var normalizedPosition = getNormalizedTouchPosition(touchX, touchY, window.innerWidth, window.innerHeight);
+  
+    // Now use normalizedPosition.x and normalizedPosition.y to set from camera
     var raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera({x: touchX, y: touchY}, cameraEl.getObject3D('camera'));
+    raycaster.setFromCamera({ x: normalizedPosition.x, y: normalizedPosition.y }, cameraEl.getObject3D('camera'));
+  
+    // Define the plane or surface you expect to intersect with the ray
+    // This might be a ground plane or other geometry in your scene
+    var planeGeometry = new THREE.PlaneGeometry(1000, 1000); // Large enough to receive the ray
+    var planeMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide });
+    var planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+    planeMesh.visible = false; // Hide it since it's just for raycasting
+    sceneEl.object3D.add(planeMesh);
   
     // Perform the raycast
-    var intersects = raycaster.intersectObjects(sceneEl.object3D.children, true);
+    var intersects = raycaster.intersectObject(planeMesh);
   
     // If there is an intersection, return the point of intersection
     if (intersects.length > 0) {
-        var intersectionPoint = intersects[0].point;
-        return intersectionPoint;
+      var intersectionPoint = intersects[0].point;
+      return intersectionPoint;
     }
   
     return null;
+}
+
+function getNormalizedTouchPosition(touchX, touchY, width, height) {
+    return {
+        x: (touchX / width) * 2 - 1,
+        y: -(touchY / height) * 2 + 1
+    };
 }
 
 function staticLoadPlaces() {
