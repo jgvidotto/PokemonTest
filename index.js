@@ -1,10 +1,9 @@
 var modelEntity;
+    
+var cameraEl = document.querySelector('a-camera');
+var sceneEl = document.querySelector('a-scene');
 
 window.onload = () => {
-    
-    cameraEl = document.querySelector('a-camera');
-    sceneEl = document.querySelector('a-scene');
-    
     // Register event listeners
     window.addEventListener('touchstart', onTouchStart);
     window.addEventListener('touchmove', onTouchMove);
