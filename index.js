@@ -1,21 +1,24 @@
 var modelEntity;
 
 window.onload = () => {
+    
+    cameraEl = document.querySelector('a-camera');
+    sceneEl = document.querySelector('a-scene');
+    
+    // Register event listeners
+    window.addEventListener('touchstart', onTouchStart);
+    window.addEventListener('touchmove', onTouchMove);
+    window.addEventListener('touchend', onTouchEnd);
+
     staticLoadPlaces().then(places => {
         renderPlaces(places);
     }).catch(error => {
         console.error(error);
     });
-    cameraEl = document.querySelector('a-camera');
-    sceneEl = document.querySelector('a-scene');
-
-    // Register event listeners
-    window.addEventListener('touchstart', onTouchStart);
-    window.addEventListener('touchmove', onTouchMove);
-    window.addEventListener('touchend', onTouchEnd);
 };
 
 var isMoving = false;
+var lastPinchDistance = null;
 
 function onTouchStart(event) {
     // Prevent default behavior
@@ -25,7 +28,37 @@ function onTouchStart(event) {
 
 
 function onTouchMove(event) {
-    if (isMoving) {
+    if (event.touches.length == 2) {
+        // Prevent the default touch behavior
+        event.preventDefault();
+
+        // Calculate pinch distance
+        var touch1 = {x: event.touches[0].clientX, y: event.touches[0].clientY};
+        var touch2 = {x: event.touches[1].clientX, y: event.touches[1].clientY};
+        var pinchDistance = Math.hypot(touch2.x - touch1.x, touch2.y - touch1.y);
+
+        // Check if last pinch distance is set; if not, set it to the current distance
+        if (lastPinchDistance === null) {
+            lastPinchDistance = pinchDistance;
+        }
+
+        // Calculate scale factor based on the pinch distance change
+        var scaleFactor = pinchDistance / lastPinchDistance;
+
+        // Get current scale of the model
+        var currentScale = modelEntity.getAttribute('scale') || {x: 1, y: 1, z: 1};
+        var newScale = {
+            x: currentScale.x * scaleFactor,
+            y: currentScale.y * scaleFactor,
+            z: currentScale.z * scaleFactor
+        };
+
+        // Set the new scale to the model
+        modelEntity.setAttribute('scale', newScale);
+
+        // Update lastPinchDistance for the next move event
+        lastPinchDistance = pinchDistance;
+    } else if (event.touches.length == 1 && isMoving) {
         var touchPosition3D = getTouchPositionIn3D(event.touches[0]);
 
         // Update model position
@@ -36,37 +69,32 @@ function onTouchMove(event) {
 }
 
 function onTouchEnd(event) {
+    if (event.touches.length < 2) {
+        lastPinchDistance = null;
+    }
     isMoving = false;
 }
 
 function getTouchPositionIn3D(touchEvent) {
-    // Calculate the position of the touch event on the screen
-    var touchX = touchEvent.touches[0].clientX;
-    var touchY = touchEvent.touches[0].clientY;
+    // Calculate the normalized position of the touch event on the screen
+    var touchX = (touchEvent.clientX / window.innerWidth) * 2 - 1;
+    var touchY = -(touchEvent.clientY / window.innerHeight) * 2 + 1;
   
     // Create a raycaster and set its origin and direction
     var raycaster = new THREE.Raycaster();
     raycaster.setFromCamera({x: touchX, y: touchY}, cameraEl.getObject3D('camera'));
   
-    // Define the plane or surface you expect to intersect with the ray
-    // This might be a ground plane or other geometry in your scene
-    var planeGeometry = new THREE.PlaneGeometry(1000, 1000); // Large enough to receive the ray
-    var planeMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide });
-    var planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
-    planeMesh.visible = false; // Hide it since it's just for raycasting
-    sceneEl.object3D.add(planeMesh);
-  
     // Perform the raycast
-    var intersects = raycaster.intersectObject(planeMesh);
+    var intersects = raycaster.intersectObjects(sceneEl.object3D.children, true);
   
     // If there is an intersection, return the point of intersection
     if (intersects.length > 0) {
-      var intersectionPoint = intersects[0].point;
-      return intersectionPoint;
+        var intersectionPoint = intersects[0].point;
+        return intersectionPoint;
     }
   
     return null;
-  }
+}
 
 function staticLoadPlaces() {
     return new Promise((resolve, reject) => {
