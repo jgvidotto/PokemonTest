@@ -1,19 +1,21 @@
 var modelEntity;
-    
-var cameraEl = document.querySelector('a-camera');
-var sceneEl = document.querySelector('a-scene');
 
 window.onload = () => {
     // Register event listeners
-    window.addEventListener('touchstart', onTouchStart);
-    window.addEventListener('touchmove', onTouchMove);
-    window.addEventListener('touchend', onTouchEnd);
+ 
 
     staticLoadPlaces().then(places => {
         renderPlaces(places);
     }).catch(error => {
         console.error(error);
     });
+    
+    cameraEl = document.querySelector('a-camera');
+    sceneEl = document.querySelector('a-scene');
+    
+    window.addEventListener('touchstart', onTouchStart, { passive: false });
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd, { passive: false });
 };
 
 var isMoving = false;
