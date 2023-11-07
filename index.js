@@ -102,7 +102,9 @@ function onTouchMove(event) {
                 moveModelToTouchPosition(event.touches[0]);
             }
         } else {
-            moveModelToTouchPosition(event.touches[0]);
+            if (isMoving) {
+                moveModelToTouchPosition(event.touches[0]);
+            }
         }
     }
 }
@@ -146,17 +148,30 @@ function getTouchPositionIn3D(touchEvent) {
     var touchY = touchEvent.clientY;
     
     var normalizedPosition = getNormalizedTouchPosition(touchX, touchY, window.innerWidth, window.innerHeight);
-    raycaster.setFromCamera({ x: normalizedPosition.x, y: normalizedPosition.y }, cameraEl.getObject3D('camera'));
+    console.log('Normalized Position:', normalizedPosition);
+
+    // Get the camera object from the camera entity
+    var cameraObject = cameraEl.getObject3D('camera');
+    if (!cameraObject) {
+        console.error('Camera object not found in camera entity.');
+        return null;
+    }
+
+    raycaster.setFromCamera({ x: normalizedPosition.x, y: normalizedPosition.y }, cameraObject);
+    console.log('Ray:', raycaster.ray);
     
-    // Perform the raycast
-    var intersects = raycaster.intersectObject(planeMesh);
-    
-    // Debugging: log the intersects to see if and where it's occurring
-    console.log(intersects);
-    
-    // If there is an intersection, return the point of intersection
-    if (intersects.length > 0) {
-        return intersects[0].point;
+    // Make sure the planeMesh is in the scene and updated
+    if (planeMesh) {
+        planeMesh.updateMatrixWorld();
+        var intersects = raycaster.intersectObject(planeMesh);
+        
+        console.log('Intersects:', intersects);
+        
+        if (intersects.length > 0) {
+            return intersects[0].point;
+        }
+    } else {
+        console.error('planeMesh not found in the scene.');
     }
     
     return null;
