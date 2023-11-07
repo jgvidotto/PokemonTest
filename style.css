@@ -33,3 +33,20 @@ button {
     color: white;
     z-index: 999999;
 }
+
+.ar-button-container {
+    position: fixed; /* Fixed position to stay in place during scrolling */
+    left: 50%; /* Center the button container horizontally */
+    bottom: 20px; /* Position from the bottom of the page */
+    transform: translateX(-50%); /* Center the button */
+    z-index: 1000; /* High z-index to ensure visibility */
+}
+
+#start-xr-btn {
+    padding: 10px 20px; /* Padding for aesthetics */
+    background-color: white; /* White background */
+    border: 1px solid #05c20e; /* Light grey border */
+    border-radius: 5px; /* Rounded corners */
+    cursor: pointer; /* Indicates the button is clickable */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Shadow for depth */
+}

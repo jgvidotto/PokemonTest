@@ -1,3 +1,5 @@
+import { XRPlanes } from 'XRPlanes';
+
 var modelEntity;
 var cameraEl;
 var sceneEl;
@@ -7,17 +9,60 @@ var lastPinchDistance = null;
 var raycaster = new THREE.Raycaster();
 var planeMesh;
 
+function setupRenderer() {
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.xr.enabled = true; // Enable XR
+    return renderer;
+}
+
 function setupCameraAndScene() {
     cameraEl = document.querySelector('a-camera');
     sceneEl = document.querySelector('a-scene');
-
+    
     if (!cameraEl || !sceneEl) {
-        console.error('Camera or Scene not found!');
-        return;
+      console.error('Camera or Scene not found!');
+      return;
     }
-
+  
+    // Setup the renderer and assign it to the scene
+    sceneEl.renderer = setupRenderer(); // This line is new
+  
     setupIntersectionPlane();
+    // Removed initializeXRPlaneDetection call from here
 }
+
+function startXR() {
+    if (navigator.xr) {
+      navigator.xr.requestSession('immersive-ar', {
+        requiredFeatures: ['local-floor', 'bounded-floor', 'hit-test']
+      }).then((session) => {
+        sceneEl.renderer.xr.setSession(session);
+        initializeXRPlaneDetection();
+      }).catch((error) => {
+        console.error('Could not start XR session:', error);
+      });
+    } else {
+      console.error('WebXR not available');
+    }
+}
+
+async function initializeXRPlaneDetection() {
+    const renderer = sceneEl.renderer;
+    const session = renderer.xr.getSession();
+  
+    let xrPlaneDetector = new XRPlanes(session);
+    
+    // Listen for the 'planesadded' event to handle newly detected planes
+    xrPlaneDetector.addEventListener('planesadded', (event) => {
+      event.planes.forEach((plane) => {
+        // Here you would add your logic to handle the new plane
+        // For example, creating a visual representation of the plane
+      });
+    });
+  
+    // Start the plane detection
+    xrPlaneDetector.start();
+  }
 
 function setupIntersectionPlane() {
     if (sceneEl) {
@@ -37,10 +82,13 @@ function setupIntersectionPlane() {
 window.onload = () => {
     setupCameraAndScene();
 
-    staticLoadPlaces().then(places => {
-        renderPlaces(places);
-    }).catch(error => {
-        console.error(error);
+    document.querySelector('#start-xr-btn').addEventListener('click', () => { // This line is new
+        startXR(); // This line is new
+        staticLoadPlaces().then(places => {
+          renderPlaces(places);
+        }).catch(error => {
+          console.error(error);
+        });
     });
 
     // Register event listeners
