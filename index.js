@@ -82,15 +82,12 @@ function setupIntersectionPlane() {
 window.onload = () => {
     setupCameraAndScene();
 
-    document.querySelector('#start-xr-btn').addEventListener('click', () => { // This line is new
-        startXR(); // This line is new
-        staticLoadPlaces().then(places => {
-          renderPlaces(places);
-        }).catch(error => {
-          console.error(error);
-        });
+    staticLoadPlaces().then(places => {
+        renderPlaces(places);
+    }).catch(error => {
+        console.error(error);
     });
-
+    startXR();
     // Register event listeners
     window.addEventListener('touchstart', onTouchStart, { passive: false });
     window.addEventListener('touchmove', onTouchMove, { passive: false });
