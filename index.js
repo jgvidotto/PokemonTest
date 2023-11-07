@@ -26,8 +26,6 @@ function setupCameraAndScene() {
   
     // Setup the renderer and assign it to the scene
     sceneEl.renderer = setupRenderer(); // This line is new
-  
-    setupIntersectionPlane();
     // Removed initializeXRPlaneDetection call from here
 }
 
@@ -55,8 +53,7 @@ async function initializeXRPlaneDetection() {
     // Listen for the 'planesadded' event to handle newly detected planes
     xrPlaneDetector.addEventListener('planesadded', (event) => {
       event.planes.forEach((plane) => {
-        // Here you would add your logic to handle the new plane
-        // For example, creating a visual representation of the plane
+        setupIntersectionPlane(plane);
       });
     });
   
@@ -64,22 +61,47 @@ async function initializeXRPlaneDetection() {
     xrPlaneDetector.start();
   }
 
-function setupIntersectionPlane() {
+function showStartPrompt() {
+    // Create a prompt for the user to start the experience
+    const startPrompt = document.createElement('div');
+    startPrompt.textContent = 'Tap anywhere to start';
+    startPrompt.style.position = 'absolute';
+    startPrompt.style.top = '50%';
+    startPrompt.style.left = '50%';
+    startPrompt.style.transform = 'translate(-50%, -50%)';
+    startPrompt.style.color = 'white';
+    startPrompt.style.backgroundColor = 'black';
+    startPrompt.style.padding = '10px';
+    startPrompt.style.cursor = 'pointer';
+    document.body.appendChild(startPrompt);
+
+    // Use a user gesture to start the AR experience
+    startPrompt.addEventListener('click', function () {
+        startXR();
+        document.body.removeChild(startPrompt); // Remove the prompt after starting the AR
+    });
+}
+
+function setupIntersectionPlane(plane) {
     if (sceneEl) {
-        var planeGeometry = new THREE.PlaneGeometry(1000, 1000);
+        var planeGeometry = new THREE.PlaneGeometry(plane.extend.width, plane.extend.height);
         var planeMaterial = new THREE.MeshBasicMaterial({
-            color: 0xffff00, // Color is irrelevant since the plane will be invisible
+            color: 0xffff00, 
             side: THREE.DoubleSide,
-            // Removed the visible property from material and set the mesh visibility to false instead
+            transparent: true,
+            opacity: 0.5
         });
         // Assign the new mesh to the global variable planeMesh
         planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
-        planeMesh.visible = false; // Make the mesh invisible
+        planeMesh.position.copy(plane.position);
+        planeMesh.quaternion.copy(plane.orientation);
+        planeMesh.visible = true; 
         sceneEl.object3D.add(planeMesh);
     }
 }
 
 window.onload = () => {
+    showStartPrompt();
     setupCameraAndScene();
 
     staticLoadPlaces().then(places => {
@@ -87,7 +109,6 @@ window.onload = () => {
     }).catch(error => {
         console.error(error);
     });
-    startXR();
     // Register event listeners
     window.addEventListener('touchstart', onTouchStart, { passive: false });
     window.addEventListener('touchmove', onTouchMove, { passive: false });
