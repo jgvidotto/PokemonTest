@@ -1,7 +1,7 @@
 // Import the necessary modules from Three.js
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
+import { XRPlanes } from 'XRPlanes';
 
 // Declare your variables
 let camera, scene, renderer, gltfLoader;
@@ -64,8 +64,35 @@ function onSessionStarted(session) {
     });
   });
 
+  const planes = new XRPlanes();
+  planes.addEventListener('planeadded', onPlaneAdded);
+  scene.add(planes);
+
   // Start the animation loop here, after the session has started
   animate();
+}
+
+function onPlaneAdded(event) {
+    const plane = event.plane;
+  
+    // Create a mesh to visually represent the plane in the scene
+    const geometry = new THREE.PlaneGeometry(plane.width, plane.height);
+    const material = new THREE.MeshBasicMaterial({
+    color: 0x00FF00, // Example: Green color for the plane
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.5
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+
+    // Set the mesh position and orientation based on the plane's pose
+    // The pose contains the position and orientation in a matrix form
+    mesh.matrixAutoUpdate = false;
+    mesh.matrix.fromArray(plane.poseMatrix);
+    mesh.userData.plane = plane; // Store the plane data for later use if needed
+
+    // Add the mesh to the scene
+    scene.add(mesh);
 }
 
 function onSelect() {
