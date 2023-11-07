@@ -4,6 +4,8 @@ var sceneEl;
 var intersectionPlane;
 var isMoving = false;
 var lastPinchDistance = null;
+var raycaster = new THREE.Raycaster();
+var planeMesh;
 
 function setupCameraAndScene() {
     cameraEl = document.querySelector('a-camera');
@@ -21,12 +23,14 @@ function setupIntersectionPlane() {
     if (sceneEl) {
         var planeGeometry = new THREE.PlaneGeometry(1000, 1000);
         var planeMaterial = new THREE.MeshBasicMaterial({
-            color: 0xffff00,
+            color: 0xffff00, // Color is irrelevant since the plane will be invisible
             side: THREE.DoubleSide,
-            visible: false
+            // Removed the visible property from material and set the mesh visibility to false instead
         });
-        intersectionPlane = new THREE.Mesh(planeGeometry, planeMaterial);
-        sceneEl.object3D.add(intersectionPlane);
+        // Assign the new mesh to the global variable planeMesh
+        planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
+        planeMesh.visible = false; // Make the mesh invisible
+        sceneEl.object3D.add(planeMesh);
     }
 }
 
@@ -124,6 +128,7 @@ function hasMovedSignificantly(touch) {
 
 function moveModelToTouchPosition(touch) {
     var touchPosition3D = getTouchPositionIn3D(touch);
+    console.log(touchPosition3D);
     if (touchPosition3D) {
         modelEntity.setAttribute('position', touchPosition3D);
     }
@@ -139,30 +144,21 @@ function placeModelAtTap(touchPosition) {
 function getTouchPositionIn3D(touchEvent) {
     var touchX = touchEvent.clientX;
     var touchY = touchEvent.clientY;
-  
+    
     var normalizedPosition = getNormalizedTouchPosition(touchX, touchY, window.innerWidth, window.innerHeight);
-  
-    // Now use normalizedPosition.x and normalizedPosition.y to set from camera
-    var raycaster = new THREE.Raycaster();
     raycaster.setFromCamera({ x: normalizedPosition.x, y: normalizedPosition.y }, cameraEl.getObject3D('camera'));
-  
-    // Define the plane or surface you expect to intersect with the ray
-    // This might be a ground plane or other geometry in your scene
-    var planeGeometry = new THREE.PlaneGeometry(1000, 1000); // Large enough to receive the ray
-    var planeMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, side: THREE.DoubleSide });
-    var planeMesh = new THREE.Mesh(planeGeometry, planeMaterial);
-    planeMesh.visible = false; // Hide it since it's just for raycasting
-    sceneEl.object3D.add(planeMesh);
-  
+    
     // Perform the raycast
     var intersects = raycaster.intersectObject(planeMesh);
-  
+    
+    // Debugging: log the intersects to see if and where it's occurring
+    console.log(intersects);
+    
     // If there is an intersection, return the point of intersection
     if (intersects.length > 0) {
-      var intersectionPoint = intersects[0].point;
-      return intersectionPoint;
+        return intersects[0].point;
     }
-  
+    
     return null;
 }
 
