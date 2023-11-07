@@ -15,6 +15,7 @@ document.getElementById('start-xr').addEventListener('click', init);
 
 async function init() {
   // Set up the THREE.js scene
+  console.log('Init function called');
   scene = new THREE.Scene();
 
   // Set up the camera
