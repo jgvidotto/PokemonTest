@@ -1,13 +1,17 @@
+// Import the necessary modules from Three.js
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { XRControllerModelFactory } from 'three/addons/webxr/XRControllerModelFactory.js';
-import { XRPlanes } from 'XRPlanes';
 
+// Declare your variables
 let camera, scene, renderer, gltfLoader;
-let controller, controllerGrip;
+let controller;
 let xrSession = null;
 let reticle;
 let hitTestSource = null;
+
+// This event listener will call init() when the 'start-xr' button is clicked.
+document.getElementById('start-xr').addEventListener('click', init);
 
 async function init() {
   // Set up the THREE.js scene
@@ -36,9 +40,15 @@ async function init() {
   controller.addEventListener('select', onSelect);
   scene.add(controller);
 
-  // Start the WebXR AR session
+  // Remove the event listener to prevent multiple bindings
+  document.getElementById('start-xr').removeEventListener('click', init);
+
+  // Request the session within the user gesture event listener
   navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['local-floor', 'hit-test'] })
-    .then(onSessionStarted);
+    .then(onSessionStarted)
+    .catch(err => {
+      console.error('Could not start AR session.', err);
+    });
 }
 
 function onSessionStarted(session) {
@@ -53,33 +63,8 @@ function onSessionStarted(session) {
     });
   });
 
-  // Set up the environment with detected planes
-  const planes = new XRPlanes();
-  planes.addEventListener('planeadded', onPlaneAdded);
-  scene.add(planes);
-}
-
-function onPlaneAdded(event) {
-    const plane = event.plane;
-  
-    // Create a mesh to visually represent the plane in the scene
-    const geometry = new THREE.PlaneGeometry(plane.width, plane.height);
-    const material = new THREE.MeshBasicMaterial({
-      color: 0x00FF00, // Example: Green color for the plane
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.5
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-  
-    // Set the mesh position and orientation based on the plane's pose
-    // The pose contains the position and orientation in a matrix form
-    mesh.matrixAutoUpdate = false;
-    mesh.matrix.fromArray(plane.poseMatrix);
-    mesh.userData.plane = plane; // Store the plane data for later use if needed
-  
-    // Add the mesh to the scene
-    scene.add(mesh);
+  // Start the animation loop here, after the session has started
+  animate();
 }
 
 function onSelect() {
@@ -115,6 +100,3 @@ function render(timestamp, frame) {
 
   renderer.render(scene, camera);
 }
-
-init();
-animate();

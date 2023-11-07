@@ -42,7 +42,7 @@ button {
     z-index: 1000; /* High z-index to ensure visibility */
 }
 
-#start-xr-btn {
+#start-xr {
     padding: 10px 20px; /* Padding for aesthetics */
     background-color: white; /* White background */
     border: 1px solid #05c20e; /* Light grey border */
