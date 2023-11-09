@@ -8,27 +8,27 @@
       {
         "imports": {
           "three": "https://unpkg.com/three@0.158.0/build/three.module.js",
-          "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/",
-          "XRPlanes": "https://unpkg.com/three@0.158.0/examples/jsm/webxr/XRPlanes.js"
+          "three/addons/": "https://unpkg.com/three@0.158.0/examples/jsm/"
         }
       }
     </script>
     
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
+    <script async src="https://docs.opencv.org/master/opencv.js"></script>
+    
     <script type="module" src="index.js"></script>
+    <script type="module" src="opencvtest.js"></script>
     <link rel="stylesheet" type="text/css" href="./style.css"/>
   </head>
 
   <body style="margin: 0; overflow: hidden;">
-    <div class="ar-button-container">
-      <button id="start-xr">Start XR</button>
-    </div>
+    <canvas id="frameCanvas" style="display: none;"></canvas>
     <a-scene
       vr-mode-ui="enabled: false"
       arjs="sourceType: webcam; videoTexture: true; debugUIEnabled: false;"
     >
-      <a-camera fov="80" near="0.1" position="0 1.6 -5" far="10000" gps-new-camera> </a-camera>
+      <a-camera fov="80" near="0.1" position="0 1.6 -5" far="10000"> </a-camera>
     </a-scene>
   </body>
 </html>

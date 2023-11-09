@@ -1,130 +1,47 @@
-// Import the necessary modules from Three.js
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { XRPlanes } from 'XRPlanes';
+import { startVideoStream } from './opencvtest.js';
 
-// Declare your variables
-let camera, scene, renderer, gltfLoader;
-let controller;
-let xrSession = null;
-let reticle;
-let hitTestSource = null;
+window.onload = () => {
+  startVideoStream();
+};
 
-// This event listener will call init() when the 'start-xr' button is clicked.
-document.getElementById('start-xr').addEventListener('click', init);
 
-async function init() {
-  // Set up the THREE.js scene
-  console.log('Init function called');
-  scene = new THREE.Scene();
+var model = {
+    url: './Assets/bear.glb',
+    scale: '1.5 1.5 1.5',
+    position: '1 1.5 -3.5',
+};
 
-  // Set up the camera
-  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
 
-  // Set up the WebGL renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.xr.enabled = true;
-  document.body.appendChild(renderer.domElement);
-
-  // Load the .glb model
-  gltfLoader = new GLTFLoader();
-  gltfLoader.load('./Assets/magnemite/scene.gltf', (gltf) => {
-    // Store the loaded model for later use
-    reticle = gltf.scene;
-    reticle.visible = false; // Initially hidden until a plane is detected
-    scene.add(reticle);
-  });
-
-  // Set up the controller for input
-  controller = renderer.xr.getController(0);
-  controller.addEventListener('select', onSelect);
-  scene.add(controller);
-
-  // Remove the event listener to prevent multiple bindings
-  document.getElementById('start-xr').removeEventListener('click', init);
-
-  // Request the session within the user gesture event listener
-  navigator.xr.requestSession('immersive-ar', { requiredFeatures: ['local-floor', 'hit-test'] })
-    .then(onSessionStarted)
-    .catch(err => {
-      console.error('Could not start AR session.', err);
-    });
-}
-
-function onSessionStarted(session) {
-  xrSession = session;
-  renderer.xr.setSession(session);
-  session.addEventListener('end', onSessionEnded);
-
-  // Set up hit test source
-  session.requestReferenceSpace('viewer').then((referenceSpace) => {
-    session.requestHitTestSource({ space: referenceSpace }).then((source) => {
-      hitTestSource = source;
-    });
-  });
-
-  const planes = new XRPlanes();
-  planes.addEventListener('planeadded', onPlaneAdded);
-  scene.add(planes);
-
-  // Start the animation loop here, after the session has started
-  animate();
-}
-
-function onPlaneAdded(event) {
-    const plane = event.plane;
-  
-    // Create a mesh to visually represent the plane in the scene
-    const geometry = new THREE.PlaneGeometry(plane.width, plane.height);
-    const material = new THREE.MeshBasicMaterial({
-    color: 0x00FF00, // Example: Green color for the plane
-    side: THREE.DoubleSide,
-    transparent: true,
-    opacity: 0.5
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-
-    // Set the mesh position and orientation based on the plane's pose
-    // The pose contains the position and orientation in a matrix form
-    mesh.matrixAutoUpdate = false;
-    mesh.matrix.fromArray(plane.poseMatrix);
-    mesh.userData.plane = plane; // Store the plane data for later use if needed
-
-    // Add the mesh to the scene
-    scene.add(mesh);
-}
-
-function onSelect() {
-  if (reticle.visible) {
-    // Place the model at the reticle's position
-    const model = reticle.clone();
-    model.position.setFromMatrixPosition(reticle.matrix);
-    model.visible = true;
-    scene.add(model);
-  }
-}
-
-function onSessionEnded(event) {
-  xrSession = null;
-}
-
-function animate() {
-  renderer.setAnimationLoop(render);
-}
-
-function render(timestamp, frame) {
-  if (frame) {
-    const hitTestResults = frame.getHitTestResults(hitTestSource);
-    if (hitTestResults.length > 0) {
-      const hit = hitTestResults[0];
-      const pose = hit.getPose(renderer.xr.getReferenceSpace());
-      reticle.matrix.fromArray(pose.transform.matrix);
-      reticle.visible = true;
-    } else {
-      reticle.visible = false;
-    }
+export function setModel(model, entity) {
+  if (model.scale) {
+      entity.setAttribute('scale', model.scale);
   }
 
-  renderer.render(scene, camera);
+  if (model.rotation) {
+      entity.setAttribute('rotation', model.rotation);
+      console.log(model.rotation);
+  }
+
+  if (model.position) {
+      entity.setAttribute('position', model.position);
+  }
+
+  if (model.animation) {
+      entity.setAttribute('animation-mixer', {clip: model.animation});
+  }
+
+  entity.setAttribute('gltf-model', model.url);
+};
+
+export function placeModelOnDetectedPlane(planeModel) {
+  let scene = document.querySelector('a-scene');
+
+  // Assuming planeModel contains the position where you want to place the model
+  let position = planeModel.point; // Modify this based on how your planeModel is structured
+
+  let modelEntity = document.createElement('a-entity');
+  setModel(model, modelEntity);
+
+  modelEntity.setAttribute('position', `${position.x} ${position.y} ${position.z}`);
+  scene.appendChild(modelEntity);
 }
