@@ -3,12 +3,49 @@ import { placeModelOnDetectedPlane  } from './index.js';
 var scene, camera, renderer, currentModelEntity;
 let video = document.getElementById("videoInput"); // video is the id of video tag
 // Function to start the video stream
-export function startVideoStream() {
+async function getCameraCurrentResolution() {
+    try {
+        // Request access to the user's camera
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const track = stream.getVideoTracks()[0];
+
+        // Get the current settings of the video track, which includes width and height
+        const settings = track.getSettings();
+
+        // Extract the current width and height
+        const currentWidth = settings.width;
+        const currentHeight = settings.height;
+
+        // Stop using the camera
+        track.stop();
+
+        return {
+            width: currentWidth,
+            height: currentHeight
+        };
+    } catch (error) {
+        console.error('Error accessing the camera:', error);
+    }
+
+    // Return a default resolution if there was an error or no camera is found
+    return {
+        width: 1280,
+        height: 720
+    };
+}
+
+
+export async function startVideoStream() {
     // Define video constraints
+    let maxRes = await getCameraCurrentResolution();
+    const aspectRatio = maxRes.width / maxRes.height;
+    console.log(maxRes.width);
+    console.log(maxRes.height);
     const constraints = {
         video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
+            width: { ideal: 1080 },
+            height: { ideal: 1920 },
+            aspectRatio: aspectRatio,
             facingMode: "environment" // Use the rear camera on mobile devices
         },
         audio: false // Don't capture audio for this application

@@ -67,3 +67,9 @@ canvas {
   .row {
     margin: 10px;
   }
+
+video {
+width: 100%;    /* Adjust the width to fit the screen */
+height: auto;   /* Maintain the aspect ratio */
+object-fit: cover; /* Optional: cover the container; could be 'contain' for no cropping */
+}
