@@ -1,6 +1,7 @@
 import { placeModelOnDetectedPlane  } from './index.js';
 
 var scene, camera, renderer, currentModelEntity;
+let video = document.getElementById("videoInput"); // video is the id of video tag
 // Function to start the video stream
 export function startVideoStream() {
     // Define video constraints
@@ -30,11 +31,6 @@ export function startVideoStream() {
         });
 }
 
-// Accessing the camera and setting up video element
-let video = document.createElement('video');
-video.setAttribute('playsinline', ''); // This ensures the video plays in the webpage on iOS devices
-document.body.appendChild(video); // You might want to append the video to a specific element
-
 function init() {
     // Initialization of Three.js scene, camera, renderer
     scene = new THREE.Scene();
@@ -54,7 +50,7 @@ function init() {
 }
 
 // Function to capture frame and process with OpenCV.js
-function processFrame() {
+async function processFrame() {
   if (video.readyState === video.HAVE_ENOUGH_DATA) {
         let canvas = document.getElementById('frameCanvas');
         let context = canvas.getContext('2d', { willReadFrequently: true });
@@ -106,7 +102,7 @@ function processFrame() {
 
             if (planeModel) {
                 // Call placeModelOnDetectedPlane here
-                placeModelOnDetectedPlane(planeModel);
+                //placeModelOnDetectedPlane(planeModel);
             }
 		}
 

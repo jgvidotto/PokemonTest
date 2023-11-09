@@ -50,3 +50,20 @@ button {
     cursor: pointer; /* Indicates the button is clickable */
     box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Shadow for depth */
 }
+
+canvas {
+    border: 1px solid black;
+  }
+  .invisible {
+    display: none;
+  }
+  .text-center {
+    text-align: center;
+  }
+  .center-block {
+    display: block;
+    margin: auto;
+  }
+  .row {
+    margin: 10px;
+  }
